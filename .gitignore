@@ -1,0 +1,5 @@
+pdatx_a/build/
+pdatx_a/sdkconfig
+pdatx_a/sdkconfig.old
+pdatx_a/dependencies.lock
+pdatx_a/managed_components/

@@ -1,0 +1,28 @@
+services:
+  esp-dev:
+    image: xianii/esp-idf-slim:v5.5.3
+    container_name: esp32-pdatx-dev
+    working_dir: /workspace
+    tty: true
+    stdin_open: true
+
+    volumes:
+      - /dev:/dev
+      - ./pdatx_a/:/workspace
+      - esp-idf-home:/root/.espressif
+
+    device_cgroup_rules:
+      - 'c 188:* rmw'
+      - 'c 166:* rmw'
+      - 'c 189:* rmw'
+    group_add:
+      - "20"
+
+    environment:
+      IDF_PATH: /opt/esp/idf
+      TERM: xterm-256color
+
+    network_mode: host
+
+volumes:
+  esp-idf-home:
