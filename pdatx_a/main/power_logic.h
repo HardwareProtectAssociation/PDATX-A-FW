@@ -13,7 +13,8 @@
 // 阈值(V)
 #define PL_V28_OK_TH   26.0f  // 请求28V后实测达到此值算成功
 #define PL_VON_TH      19.0f  // 实测高于此值开启DCDC(20V档)
-#define PL_VOFF_TH     16.0f  // 运行中低于此值锁存故障
+#define PL_VOFF_TH     16.0f  // 运行中低于此值计时欠压
+#define PL_UV_HOLD_MS  100    // 欠压持续超过此时间才锁存故障
 #define PL_SETTLE_MS   1000   // 请求后等待PD协商稳定的时间
 #define PL_RETRY_MS    3000   // 两档均失败后的重试间隔
 
