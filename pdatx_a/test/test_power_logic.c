@@ -52,12 +52,20 @@ int main(void)
     o = pl_sm_step(&sm, 2 * PL_SETTLE_MS + PL_RETRY_MS, 5.0f);
     assert(o.request == PL_REQ_28V);   // 重新从 28V 开始
 
-    // 场景4: 运行中欠压 -> 锁存故障
+    // 场景4: 欠压需持续 PL_UV_HOLD_MS 才锁存；短毛刺不故障
     pl_sm_init(&sm, 0);
     pl_sm_step(&sm, 0, 5.0f);
     pl_sm_step(&sm, 100, 28.0f);
     assert(sm.state == PL_STATE_DCDC_ON);
-    o = pl_sm_step(&sm, 200, 15.9f);
+    o = pl_sm_step(&sm, 200, 15.9f);  // 开始计时
+    assert(sm.state == PL_STATE_DCDC_ON && o.dcdc_en);
+    o = pl_sm_step(&sm, 250, 28.0f);  // 未满保持时间即恢复，计时清零
+    assert(sm.state == PL_STATE_DCDC_ON && o.dcdc_en);
+    o = pl_sm_step(&sm, 300, 15.9f);
+    assert(sm.state == PL_STATE_DCDC_ON && o.dcdc_en);
+    o = pl_sm_step(&sm, 300 + PL_UV_HOLD_MS - 1, 15.9f);
+    assert(sm.state == PL_STATE_DCDC_ON && o.dcdc_en);
+    o = pl_sm_step(&sm, 300 + PL_UV_HOLD_MS, 15.9f);
     assert(sm.state == PL_STATE_FAULT && !o.dcdc_en);
     o = pl_sm_step(&sm, 100000, 28.0f);  // 电压恢复也不解除
     assert(sm.state == PL_STATE_FAULT && !o.dcdc_en && o.request == PL_REQ_NONE);
@@ -72,6 +80,8 @@ int main(void)
     pl_sm_step(&sm, 0, 5.0f);
     pl_sm_step(&sm, 100, 28.0f);
     o = pl_sm_step(&sm, 200, 16.0f);
+    assert(sm.state == PL_STATE_DCDC_ON && o.dcdc_en);
+    o = pl_sm_step(&sm, 200 + PL_UV_HOLD_MS + 50, 16.0f);
     assert(sm.state == PL_STATE_DCDC_ON && o.dcdc_en);
 
     printf("power_logic: all tests passed\n");

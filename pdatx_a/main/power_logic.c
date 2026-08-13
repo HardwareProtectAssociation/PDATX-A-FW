@@ -43,6 +43,7 @@ pl_out_t pl_sm_step(pl_sm_t *sm, int64_t now_ms, float vin)
     case PL_STATE_REQ_28V:
         if (vin >= PL_V28_OK_TH) {
             sm->state = PL_STATE_DCDC_ON;
+            sm->deadline_ms = 0;  // 复用为欠压保持截止时间；0=未计时
             out.dcdc_en = true;
         } else if (now_ms >= sm->deadline_ms) {
             out.request = PL_REQ_20V;
@@ -54,6 +55,7 @@ pl_out_t pl_sm_step(pl_sm_t *sm, int64_t now_ms, float vin)
     case PL_STATE_REQ_20V:
         if (vin > PL_VON_TH) {
             sm->state = PL_STATE_DCDC_ON;
+            sm->deadline_ms = 0;
             out.dcdc_en = true;
         } else if (now_ms >= sm->deadline_ms) {
             sm->state = PL_STATE_RETRY_WAIT;
@@ -63,8 +65,15 @@ pl_out_t pl_sm_step(pl_sm_t *sm, int64_t now_ms, float vin)
 
     case PL_STATE_DCDC_ON:
         if (vin < PL_VOFF_TH) {
-            sm->state = PL_STATE_FAULT;  // 锁存，仅重新上电解除
+            if (sm->deadline_ms == 0) {
+                sm->deadline_ms = now_ms + PL_UV_HOLD_MS;
+            } else if (now_ms >= sm->deadline_ms) {
+                sm->state = PL_STATE_FAULT;  // 锁存，仅重新上电解除
+                break;
+            }
+            out.dcdc_en = true;  // 保持期内仍输出
         } else {
+            sm->deadline_ms = 0;
             out.dcdc_en = true;
         }
         break;
